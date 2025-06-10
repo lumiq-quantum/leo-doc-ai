@@ -1,4 +1,6 @@
 
+import type { AiServiceChunk } from '@/types';
+
 // API base URLs from the problem description
 const API_BASE_URL_UPLOAD = 'http://127.0.0.1:8787';
 const API_BASE_URL_CHAT = 'http://127.0.0.1:8000';
@@ -33,7 +35,7 @@ interface TransformedUploadedFileInfo {
 
 function processSseLine(
   line: string,
-  onChunkCallback: (chunkData: { text: string; isPartial: boolean }) => void
+  onChunkCallback: (chunkData: AiServiceChunk) => void // Changed to AiServiceChunk
 ) {
   const trimmedLine = line.trim();
   if (trimmedLine.startsWith("data:")) {
@@ -42,30 +44,31 @@ function processSseLine(
       try {
         const jsonChunk: SseChunk = JSON.parse(jsonData);
         const textContent = jsonChunk.content?.parts?.[0]?.text;
-        const isPartial = jsonChunk.partial === true; 
+        const isPartial = jsonChunk.partial === true;
 
         if (textContent !== undefined) {
           onChunkCallback({
+            type: 'content', // Specify type as content
             text: textContent,
             isPartial: isPartial,
           });
-        } else if (!isPartial) {
-          onChunkCallback({ text: "", isPartial: false });
+        } else if (!isPartial && textContent === undefined) { // Handle cases where text might be explicitly null or missing but chunk is final
+           onChunkCallback({ type: 'content', text: "", isPartial: false });
         }
       } catch (e) {
         console.warn("Error parsing JSON chunk from SSE line:", e, jsonData);
       }
     }
-  } else if (trimmedLine && !trimmedLine.startsWith(":")) { 
+  } else if (trimmedLine && !trimmedLine.startsWith(":")) {
     console.warn("Received unexpected SSE line (ignoring):", trimmedLine);
   }
 }
 
 export async function streamChatResponse(
-  message: string, 
-  files: File[] | undefined, 
+  message: string,
+  files: File[] | undefined,
   sessionId: string,
-  onChunk: (chunkData: { text: string; isPartial: boolean }) => void,
+  onChunk: (chunkData: AiServiceChunk) => void, // Changed to AiServiceChunk
   onComplete: () => void,
   onError: (error: Error) => void
 ): Promise<void> {
@@ -73,6 +76,7 @@ export async function streamChatResponse(
 
   try {
     if (files && files.length > 0) {
+      onChunk({ type: 'status', text: 'Uploading files...' });
       const formData = new FormData();
       files.forEach(file => {
         formData.append('files', file, file.name);
@@ -95,16 +99,17 @@ export async function streamChatResponse(
       if (!uploadResult || !uploadResult.uploaded_files || uploadResult.uploaded_files.length === 0) {
         throw new Error("File upload API did not return expected file information for all files.");
       }
-      
+
       uploadedFilesInfo = uploadResult.uploaded_files.map(detail => ({
         fileUri: detail.uri,
-        displayName: detail.filename, 
+        displayName: detail.filename,
         mimeType: detail.mime_type,
       }));
+      onChunk({ type: 'status', text: 'Analyzing your documents...' });
     }
 
     const newMessageParts: any[] = [];
-    
+
     if (uploadedFilesInfo.length > 0) {
       uploadedFilesInfo.forEach(info => {
         newMessageParts.push({
@@ -118,13 +123,16 @@ export async function streamChatResponse(
     }
 
     const textToSend = message.trim();
-    if (textToSend || newMessageParts.length === 0) { 
+    if (textToSend || newMessageParts.length === 0) {
          newMessageParts.push({ text: textToSend });
     }
-    
-    if (newMessageParts.length === 0) {
+
+    if (newMessageParts.length === 0 && (!files || files.length === 0)) {
        console.warn("Attempting to send a message with no text or file parts. This might be an error.");
+       // If only text was intended but it's empty, and no files, we might not want to proceed.
+       // However, current logic proceeds. For now, let AI backend handle empty message if it occurs.
     }
+
 
     const requestBody = {
       appName: "doc_agent",
@@ -169,7 +177,7 @@ export async function streamChatResponse(
       const { done, value } = await reader.read();
       if (done) {
         if (buffer.trim()) {
-           const lines = buffer.split('\n'); // Corrected: use '\n'
+           const lines = buffer.split('\n');
            lines.forEach(line => processSseLine(line, onChunk));
         }
         break;
@@ -177,7 +185,7 @@ export async function streamChatResponse(
 
       buffer += decoder.decode(value, { stream: true });
       let eolIndex;
-      while ((eolIndex = buffer.indexOf('\n')) >= 0) { // Corrected: use '\n'
+      while ((eolIndex = buffer.indexOf('\n')) >= 0) {
         const line = buffer.substring(0, eolIndex);
         buffer = buffer.substring(eolIndex + 1);
         processSseLine(line, onChunk);
@@ -188,6 +196,7 @@ export async function streamChatResponse(
   } catch (err) {
     console.error("Error in streamChatResponse:", err);
     onError(err instanceof Error ? err : new Error('An unknown error occurred in AI service.'));
-    onComplete(); 
+    // No onComplete() here, as onError should signal the end of processing for the caller to also call onComplete if needed.
+    // The caller (ChatLayout) calls onComplete in its error handler for streamChatResponse.
   }
 }

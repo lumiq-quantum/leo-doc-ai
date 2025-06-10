@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
-import type { ChatMessage } from '@/types';
+import type { ChatMessage, AiServiceChunk } from '@/types'; // Added AiServiceChunk
 import { AppHeader } from '@/components/common/AppHeader';
 import { ChatMessageItem } from './ChatMessageItem';
 import { ChatInputBar } from './ChatInputBar';
@@ -12,11 +12,12 @@ import { useToast } from '@/hooks/use-toast';
 import { ThumbsUp, ThumbsDown } from 'lucide-react';
 import { Button } from '../ui/button';
 
-const CHAT_API_BASE_URL = 'http://127.0.0.1:8000';
+const CHAT_API_BASE_URL = 'http://127.0.0.1:8000'; // LEO Doc AI API Base URL
 
 export function ChatLayout() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [isAISending, setIsAISending] = useState(false);
+  const [isAISending, setIsAISending] = useState(false); // True if AI is processing (uploading or streaming)
+  const [isFileUploading, setIsFileUploading] = useState(false); // True specifically during file upload phase
   const [sessionId, setSessionId] = useState<string | null>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -32,12 +33,12 @@ export function ChatLayout() {
             'accept': 'application/json',
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({}), 
+          body: JSON.stringify({}),
         });
 
         if (response.ok) {
           setSessionId(newSessionId);
-          console.log("Chat session created:", newSessionId);
+          console.log("LEO Doc AI session created:", newSessionId);
         } else {
           const errorData = await response.text();
           console.error("Failed to create session:", response.status, errorData);
@@ -73,7 +74,7 @@ export function ChatLayout() {
     scrollToBottom();
   }, [messages]);
 
-  const handleSendMessage = async (text: string, files?: File[]) => { // files is now File[]
+  const handleSendMessage = async (text: string, files?: File[]) => {
     if (!sessionId) {
       toast({
         title: "Session Error",
@@ -83,14 +84,13 @@ export function ChatLayout() {
       return;
     }
 
-    setIsAISending(true);
     const userMessageId = `user-${Date.now()}`;
     const userMessage: ChatMessage = {
       id: userMessageId,
       sender: 'user',
-      type: (files && files.length > 0) || text ? 'text' : 'file_info', // Simplified, ChatMessageItem handles rendering
-      text: text, // User's typed text
-      files: files, // Array of files
+      type: (files && files.length > 0) || text ? 'text' : 'file_info',
+      text: text,
+      files: files,
       timestamp: new Date(),
     };
     setMessages((prev) => [...prev, userMessage]);
@@ -100,39 +100,53 @@ export function ChatLayout() {
       id: aiMessageId,
       sender: 'ai',
       type: 'text',
-      text: '',
+      text: '', // Will be updated by status/content chunks
       timestamp: new Date(),
-      isStreaming: true,
+      isStreaming: true, // Start with streaming indicator
     };
     setMessages((prev) => [...prev, initialAIMessage]);
 
+    setIsAISending(true); // General flag for AI activity
+    if (files && files.length > 0) {
+      setIsFileUploading(true); // Specific flag for upload phase
+    }
+
     try {
       await streamChatResponse(
-        userMessage.text, 
-        files, // Pass files array
+        userMessage.text,
+        files,
         sessionId,
-        (chunkData) => { 
+        (chunkData: AiServiceChunk) => {
           setMessages((prev) =>
             prev.map((msg) => {
               if (msg.id === aiMessageId) {
-                return {
-                  ...msg,
-                  text: chunkData.isPartial ? (msg.text ?? '') + chunkData.text : chunkData.text,
-                };
+                let newText = msg.text ?? '';
+                if (chunkData.type === 'status') {
+                  newText = chunkData.text;
+                } else { // type === 'content'
+                  const currentTextIsStatus = msg.text === "Uploading files..." || msg.text === "Analyzing your documents...";
+                  if (chunkData.isPartial) {
+                    newText = (currentTextIsStatus ? '' : (msg.text ?? '')) + chunkData.text;
+                  } else {
+                    newText = chunkData.text;
+                  }
+                }
+                return { ...msg, text: newText, isStreaming: true };
               }
               return msg;
             })
           );
         },
-        () => { 
+        () => { // onComplete
           setMessages((prev) =>
             prev.map((msg) =>
               msg.id === aiMessageId ? { ...msg, isStreaming: false } : msg
             )
           );
           setIsAISending(false);
+          setIsFileUploading(false);
         },
-        (error) => { 
+        (error) => { // onError
           console.error('AI Error:', error);
           toast({
             title: "AI Error",
@@ -145,6 +159,7 @@ export function ChatLayout() {
             )
           );
           setIsAISending(false);
+          setIsFileUploading(false);
         }
       );
     } catch (error) {
@@ -160,6 +175,7 @@ export function ChatLayout() {
             )
           );
         setIsAISending(false);
+        setIsFileUploading(false);
     }
   };
 
@@ -183,7 +199,11 @@ export function ChatLayout() {
           )}
         </div>
       </ScrollArea>
-      <ChatInputBar onSendMessage={handleSendMessage} isSending={isAISending} />
+      <ChatInputBar
+        onSendMessage={handleSendMessage}
+        isSending={isAISending}
+        isFileUploading={isFileUploading}
+      />
     </div>
   );
 }

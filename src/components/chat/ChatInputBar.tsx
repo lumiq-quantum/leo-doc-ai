@@ -11,18 +11,21 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 
 interface ChatInputBarProps {
-  onSendMessage: (text: string, files?: File[]) => void; // Changed to files?: File[]
+  onSendMessage: (text: string, files?: File[]) => void;
   isSending: boolean;
+  isFileUploading?: boolean; // New prop
 }
 
-export function ChatInputBar({ onSendMessage, isSending }: ChatInputBarProps) {
+export function ChatInputBar({ onSendMessage, isSending, isFileUploading }: ChatInputBarProps) {
   const [inputText, setInputText] = useState('');
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]); // Changed to File[]
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const isDisabled = isSending || isFileUploading; // Combined disabled state
 
   useEffect(() => {
     if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto'; // Reset height to recalculate
+      textareaRef.current.style.height = 'auto';
       const scrollHeight = textareaRef.current.scrollHeight;
       textareaRef.current.style.height = `${scrollHeight}px`;
     }
@@ -34,7 +37,7 @@ export function ChatInputBar({ onSendMessage, isSending }: ChatInputBarProps) {
     setInputText('');
     setSelectedFiles([]);
     if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto'; // Reset height after send
+      textareaRef.current.style.height = 'auto';
     }
   };
 
@@ -43,18 +46,16 @@ export function ChatInputBar({ onSendMessage, isSending }: ChatInputBarProps) {
   };
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (event.key === 'Enter' && !event.shiftKey) {
+    if (event.key === 'Enter' && !event.shiftKey && !isDisabled) { // Check isDisabled here
       event.preventDefault();
       handleSend();
     }
   };
 
-  const handleFilesSelect = (newFiles: File[]) => { // Renamed from handleFileSelect for clarity
+  const handleFilesSelect = (newFiles: File[]) => {
     setSelectedFiles(prevFiles => {
       const updatedFiles = [...prevFiles];
       newFiles.forEach(newFile => {
-        // Optional: Add a check to prevent adding the exact same file instance if needed,
-        // though browser's file input usually handles not re-adding identical selections.
         if (!prevFiles.some(existingFile => existingFile.name === newFile.name && existingFile.size === newFile.size && existingFile.lastModified === newFile.lastModified)) {
           updatedFiles.push(newFile);
         }
@@ -79,6 +80,7 @@ export function ChatInputBar({ onSendMessage, isSending }: ChatInputBarProps) {
                 onClick={() => handleRemoveFile(file)}
                 className="rounded-full opacity-50 group-hover:opacity-100 hover:bg-muted focus:outline-none"
                 aria-label={`Remove ${file.name}`}
+                disabled={isDisabled} // Disable remove button when processing
               >
                 <XCircle size={14} className="text-muted-foreground hover:text-destructive" />
               </button>
@@ -87,20 +89,20 @@ export function ChatInputBar({ onSendMessage, isSending }: ChatInputBarProps) {
         </div>
       )}
       <div className="flex items-end gap-2">
-        <FileUploadButton onFileSelect={handleFilesSelect} disabled={isSending} />
+        <FileUploadButton onFileSelect={handleFilesSelect} disabled={isDisabled} />
         <Textarea
           ref={textareaRef}
           value={inputText}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
-          placeholder="Type your message or upload documents..."
+          placeholder={isFileUploading ? "Uploading files..." : (isSending ? "Waiting for LEO Doc AI..." : "Type your message or upload documents...")}
           className="flex-1 resize-none rounded-2xl border-2 border-border focus-visible:ring-primary/50 px-4 py-2.5 min-h-[48px] max-h-[120px] overflow-y-auto"
-          disabled={isSending}
+          disabled={isDisabled}
         />
         <Button
           type="button"
           onClick={handleSend}
-          disabled={isSending || (inputText.trim() === '' && selectedFiles.length === 0)}
+          disabled={isDisabled || (inputText.trim() === '' && selectedFiles.length === 0)}
           className={cn(
             "h-12 w-12 bg-accent hover:bg-accent/90 text-accent-foreground rounded-full self-end flex items-center justify-center"
           )}

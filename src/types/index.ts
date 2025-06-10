@@ -13,3 +13,8 @@ export interface User {
   email: string;
   // Add other user properties if needed
 }
+
+// New type for communication from aiService to ChatLayout
+export type AiServiceChunk =
+  | { type: 'status'; text: string }
+  | { type: 'content'; text: string; isPartial: boolean };
