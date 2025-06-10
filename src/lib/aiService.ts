@@ -42,22 +42,16 @@ function processSseLine(
       try {
         const jsonChunk: SseChunk = JSON.parse(jsonData);
         const textContent = jsonChunk.content?.parts?.[0]?.text;
-        const isPartial = jsonChunk.partial === true; // Explicitly check if partial is true
+        const isPartial = jsonChunk.partial === true; 
 
         if (textContent !== undefined) {
-          // If textContent exists (even if it's an empty string), process it
           onChunkCallback({
             text: textContent,
             isPartial: isPartial,
           });
         } else if (!isPartial) {
-          // This is a final (not partial) chunk but has no text content.
-          // This might signal the end of text streaming or just be metadata.
-          // Call onChunkCallback to allow UI to update streaming status if needed.
           onChunkCallback({ text: "", isPartial: false });
         }
-        // If it's partial and textContent is undefined, we can ignore it,
-        // as there's no text to append, and a subsequent chunk should provide text or a final status.
       } catch (e) {
         console.warn("Error parsing JSON chunk from SSE line:", e, jsonData);
       }
@@ -68,8 +62,8 @@ function processSseLine(
 }
 
 export async function streamChatResponse(
-  message: string, // User's typed text
-  files: File[] | undefined, // Array of files
+  message: string, 
+  files: File[] | undefined, 
   sessionId: string,
   onChunk: (chunkData: { text: string; isPartial: boolean }) => void,
   onComplete: () => void,
@@ -78,7 +72,6 @@ export async function streamChatResponse(
   let uploadedFilesInfo: TransformedUploadedFileInfo[] = [];
 
   try {
-    // Step 1: Upload files if present
     if (files && files.length > 0) {
       const formData = new FormData();
       files.forEach(file => {
@@ -110,7 +103,6 @@ export async function streamChatResponse(
       }));
     }
 
-    // Step 2: Construct message parts for SSE API
     const newMessageParts: any[] = [];
     
     if (uploadedFilesInfo.length > 0) {
@@ -134,7 +126,6 @@ export async function streamChatResponse(
        console.warn("Attempting to send a message with no text or file parts. This might be an error.");
     }
 
-
     const requestBody = {
       appName: "doc_agent",
       userId: "user",
@@ -146,7 +137,6 @@ export async function streamChatResponse(
       streaming: true,
     };
 
-    // Step 3: Call SSE API
     const sseResponse = await fetch(`${API_BASE_URL_CHAT}/run_sse`, {
       method: 'POST',
       headers: {
@@ -179,7 +169,7 @@ export async function streamChatResponse(
       const { done, value } = await reader.read();
       if (done) {
         if (buffer.trim()) {
-           const lines = buffer.split('\\n'); 
+           const lines = buffer.split('\n'); // Corrected: use '\n'
            lines.forEach(line => processSseLine(line, onChunk));
         }
         break;
@@ -187,7 +177,7 @@ export async function streamChatResponse(
 
       buffer += decoder.decode(value, { stream: true });
       let eolIndex;
-      while ((eolIndex = buffer.indexOf('\\n')) >= 0) {
+      while ((eolIndex = buffer.indexOf('\n')) >= 0) { // Corrected: use '\n'
         const line = buffer.substring(0, eolIndex);
         buffer = buffer.substring(eolIndex + 1);
         processSseLine(line, onChunk);
