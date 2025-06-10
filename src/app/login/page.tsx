@@ -38,8 +38,8 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-secondary p-4">
       <div className="mb-8 flex flex-col items-center">
-        <Image src="https://placehold.co/100x100.png?text=IQ" alt="DocumentIQ Logo" data-ai-hint="logo lettermark" width={80} height={80} className="rounded-lg" />
-        <h1 className="mt-4 text-3xl font-headline font-bold text-primary">DocumentIQ</h1>
+        <Image src="https://placehold.co/100x100.png?text=LD" alt="LEO Doc AI Logo" data-ai-hint="logo lettermark" width={80} height={80} className="rounded-lg" />
+        <h1 className="mt-4 text-3xl font-headline font-bold text-primary">LEO Doc AI</h1>
         <p className="text-muted-foreground">Intelligent Document Interaction</p>
       </div>
       <LoginForm />

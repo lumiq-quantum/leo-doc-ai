@@ -4,8 +4,8 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { Toaster } from '@/components/ui/toaster';
 
 export const metadata: Metadata = {
-  title: 'DocumentIQ',
-  description: 'Intelligent Document Interaction by Lumiq',
+  title: 'LEO Doc AI',
+  description: 'LEO Doc AI - Intelligent Document Interaction',
 };
 
 export default function RootLayout({

@@ -12,8 +12,8 @@ export function AppHeader() {
   return (
     <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b bg-background/95 px-4 shadow-sm backdrop-blur-md md:px-6">
       <div className="flex items-center">
-         <Image src="https://placehold.co/40x40.png?text=IQ" alt="DocumentIQ Logo" data-ai-hint="logo lettermark" width={32} height={32} className="mr-2 rounded-md" />
-        <h1 className="text-xl font-headline font-semibold text-primary">DocumentIQ</h1>
+         <Image src="https://placehold.co/40x40.png?text=LD" alt="LEO Doc AI Logo" data-ai-hint="logo lettermark" width={32} height={32} className="mr-2 rounded-md" />
+        <h1 className="text-xl font-headline font-semibold text-primary">LEO Doc AI</h1>
       </div>
       <div className="flex items-center gap-4">
         {user && <span className="text-sm text-muted-foreground hidden sm:inline">Welcome, {user.email}</span>}

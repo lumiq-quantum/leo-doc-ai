@@ -33,7 +33,7 @@ export function ChatLayout() {
             'accept': 'application/json',
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({}),
+          body: JSON.stringify({}), // Empty body as per cURL example for session creation
         });
 
         if (response.ok) {
@@ -45,7 +45,7 @@ export function ChatLayout() {
               id: 'ai-welcome',
               sender: 'ai',
               type: 'text',
-              text: "Hello! I am DocumentIQ. How can I assist you today? You can ask questions or upload a document for analysis.",
+              text: "Hello! I am LEO Doc AI. How can I assist you today? You can ask questions or upload a document for analysis.",
               timestamp: new Date(),
             }
           ]);
@@ -119,7 +119,7 @@ export function ChatLayout() {
 
     try {
       await streamChatResponse(
-        userMessage.text, // Pass the actual text user sent, or placeholder if only file
+        userMessage.text, 
         file,
         sessionId,
         (chunk) => {
@@ -153,7 +153,6 @@ export function ChatLayout() {
         }
       );
     } catch (error) {
-        // This catch is mostly for unexpected errors in streamChatResponse setup itself
         console.error("Failed to initiate AI stream:", error);
         toast({
             title: "Error",

@@ -17,7 +17,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const HARDCODED_EMAIL = "demouser@lumiq.ai";
 const HARDCODED_PASS = "lumiq123";
-const AUTH_STORAGE_KEY = "documentiq_auth_user";
+const AUTH_STORAGE_KEY = "leodocai_auth_user";
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);

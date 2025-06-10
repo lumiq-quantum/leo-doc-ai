@@ -22,7 +22,7 @@ export default function DocumentIQAppPage() {
     return (
       <div className="flex h-screen items-center justify-center bg-secondary">
         <LoadingSpinner size={48} />
-        <p className="ml-4 text-lg text-muted-foreground">Loading DocumentIQ...</p>
+        <p className="ml-4 text-lg text-muted-foreground">Loading LEO Doc AI...</p>
       </div>
     );
   }

@@ -52,7 +52,7 @@ export function LoginForm() {
     <Card className="w-full max-w-sm shadow-xl">
       <CardHeader>
         <CardTitle className="text-2xl font-headline">Welcome Back</CardTitle>
-        <CardDescription>Enter your credentials to access DocumentIQ.</CardDescription>
+        <CardDescription>Enter your credentials to access LEO Doc AI.</CardDescription>
       </CardHeader>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
