@@ -5,6 +5,7 @@ import React, { useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Paperclip } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils'; // Added import
 
 interface FileUploadButtonProps {
   onFileSelect: (file: File) => void;
