@@ -67,7 +67,7 @@ export function LoginForm() {
                     <Input
                       id="email"
                       type="email"
-                      placeholder="demouser@lumiq.ai"
+                      placeholder="your@email.com"
                       {...field}
                       data-ai-hint="email input"
                     />
@@ -86,7 +86,7 @@ export function LoginForm() {
                     <Input
                       id="password"
                       type="password"
-                      placeholder="lumiq123"
+                      placeholder="••••••••"
                       {...field}
                       data-ai-hint="password input"
                     />
