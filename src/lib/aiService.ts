@@ -21,7 +21,10 @@ interface SseChunk {
   // Other fields like usageMetadata, invocationId etc. are ignored for display
 }
 
-function processSseLine(line: string, onChunkCallback: (chunk: string) => void) {
+function processSseLine(
+  line: string,
+  onChunkCallback: (chunkData: { text: string; isPartial: boolean }) => void
+) {
   const trimmedLine = line.trim();
   if (trimmedLine.startsWith("data:")) {
     const jsonData = trimmedLine.substring("data:".length).trim();
@@ -29,7 +32,10 @@ function processSseLine(line: string, onChunkCallback: (chunk: string) => void) 
       try {
         const jsonChunk: SseChunk = JSON.parse(jsonData);
         if (jsonChunk.content?.parts?.[0]?.text) {
-          onChunkCallback(jsonChunk.content.parts[0].text);
+          onChunkCallback({
+            text: jsonChunk.content.parts[0].text,
+            isPartial: jsonChunk.partial === true, // True if partial is explicitly true
+          });
         }
       } catch (e) {
         console.warn("Error parsing JSON chunk from SSE line:", e, jsonData);
@@ -44,7 +50,7 @@ export async function streamChatResponse(
   message: string,
   file: File | undefined,
   sessionId: string,
-  onChunk: (chunk: string) => void,
+  onChunk: (chunkData: { text: string; isPartial: boolean }) => void,
   onComplete: () => void,
   onError: (error: Error) => void
 ): Promise<void> {
@@ -152,7 +158,9 @@ export async function streamChatResponse(
       if (done) {
         // Process any remaining data in buffer before completing
         if (buffer.trim()) {
-          processSseLine(buffer, onChunk);
+           // Assuming any final buffered content is also line-delimited
+           const lines = buffer.split('\n');
+           lines.forEach(line => processSseLine(line, onChunk));
         }
         break;
       }
@@ -171,15 +179,6 @@ export async function streamChatResponse(
   } catch (err) {
     console.error("Error in streamChatResponse:", err);
     onError(err instanceof Error ? err : new Error('An unknown error occurred in AI service.'));
-    // Ensure onComplete is called in case of error to clean up UI state (e.g. isSending)
-    // but only if it hasn't been called. If it's an error during streaming, onComplete might be premature.
-    // However, the current structure calls onComplete() after the loop or in the catch block for other errors.
-    // Let's ensure it is robustly called.
-    // The `finally` block is not used here as onComplete/onError have specific timing needs.
-    // If an error happens AFTER streaming starts and BEFORE onComplete is naturally called,
-    // this onError then onComplete sequence is important.
-    // If error happens during setup, onComplete might not be necessary if streaming hasn't started to affect UI.
-    // For simplicity and robustness for the UI, calling onComplete is generally safe.
     onComplete(); 
   }
 }

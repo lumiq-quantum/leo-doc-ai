@@ -122,11 +122,17 @@ export function ChatLayout() {
         userMessage.text, 
         file,
         sessionId,
-        (chunk) => {
+        (chunkData) => { // onChunk receives { text: string; isPartial: boolean }
           setMessages((prev) =>
-            prev.map((msg) =>
-              msg.id === aiMessageId ? { ...msg, text: msg.text + chunk } : msg
-            )
+            prev.map((msg) => {
+              if (msg.id === aiMessageId) {
+                return {
+                  ...msg,
+                  text: chunkData.isPartial ? msg.text + chunkData.text : chunkData.text,
+                };
+              }
+              return msg;
+            })
           );
         },
         () => { // onComplete
