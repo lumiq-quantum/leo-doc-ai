@@ -3,11 +3,12 @@
 
 import type { ChatMessage } from '@/types';
 import { cn } from '@/lib/utils';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { User, Bot, FileText } from 'lucide-react';
 import { format } from 'date-fns';
 import { Card, CardContent } from '@/components/ui/card';
 import ReactMarkdown from 'react-markdown';
+import { Badge } from '@/components/ui/badge'; // Added for file display
 
 interface ChatMessageItemProps {
   message: ChatMessage;
@@ -17,7 +18,6 @@ export function ChatMessageItem({ message }: ChatMessageItemProps) {
   const isUser = message.sender === 'user';
   const isAI = message.sender === 'ai';
 
-  // Basic styling for markdown elements to match the chat bubble
   const markdownComponents = {
     h1: ({node, ...props}: any) => <h1 className="text-xl font-semibold my-2" {...props} />,
     h2: ({node, ...props}: any) => <h2 className="text-lg font-semibold my-1.5" {...props} />,
@@ -29,7 +29,6 @@ export function ChatMessageItem({ message }: ChatMessageItemProps) {
     strong: ({node, ...props}: any) => <strong className="font-bold" {...props} />,
     em: ({node, ...props}: any) => <em className="italic" {...props} />,
     a: ({node, ...props}: any) => <a className="underline hover:text-accent" target="_blank" rel="noopener noreferrer" {...props} />,
-    // Add more custom renderers as needed
   };
 
   return (
@@ -53,31 +52,42 @@ export function ChatMessageItem({ message }: ChatMessageItemProps) {
         )}
       >
         <CardContent className="p-3">
-          {message.type === 'file_info' && message.file && (
-            <div className="mb-1 flex items-center gap-2 p-2 rounded-md bg-background/10">
-              <FileText size={24} className={isUser ? "text-primary-foreground/80" : "text-primary"} />
-              <div className="flex flex-col">
-                <span className="font-medium text-sm">{message.file.name}</span>
-                <span className="text-xs opacity-80">{(message.file.size / 1024).toFixed(2)} KB</span>
-              </div>
+          {isUser && message.files && message.files.length > 0 && (
+            <div className="mb-2 flex flex-wrap gap-2">
+              {message.files.map((file, index) => (
+                <Badge key={index} variant={isUser ? "secondary" : "outline"} className={cn(
+                  "flex items-center gap-1.5 text-xs p-1.5",
+                  isUser ? "bg-primary-foreground/20 text-primary-foreground" : "border-primary/30 text-primary"
+                )}>
+                  <FileText size={14} />
+                  <span>{file.name}</span>
+                  <span className="opacity-70">({(file.size / 1024).toFixed(1)}KB)</span>
+                </Badge>
+              ))}
             </div>
           )}
           
-          {isAI ? (
-            <div className="prose prose-sm dark:prose-invert max-w-none text-sm leading-relaxed text-current">
-               <ReactMarkdown components={markdownComponents}>
+          {message.text && (
+            isAI ? (
+              <div className="prose prose-sm dark:prose-invert max-w-none text-sm leading-relaxed text-current">
+                 <ReactMarkdown components={markdownComponents}>
+                  {message.text}
+                </ReactMarkdown>
+              </div>
+            ) : (
+              <p className="whitespace-pre-wrap text-sm leading-relaxed">
                 {message.text}
-              </ReactMarkdown>
-            </div>
-          ) : (
-            <p className="whitespace-pre-wrap text-sm leading-relaxed">
-              {message.text}
-            </p>
+              </p>
+            )
           )}
 
-          {isAI && message.isStreaming && (
-            <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-current ml-1 align-middle" />
+          {isAI && message.isStreaming && !message.text && (
+             <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-current ml-1 align-middle" />
           )}
+          {isAI && message.isStreaming && message.text && (
+             <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-current ml-1 align-middle" />
+          )}
+
 
           <p className={cn(
             "mt-1.5 text-xs",

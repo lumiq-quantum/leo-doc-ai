@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ThumbsUp, ThumbsDown } from 'lucide-react';
 import { Button } from '../ui/button';
 
-const CHAT_API_BASE_URL = 'http://127.0.0.1:8000'; // As per API spec
+const CHAT_API_BASE_URL = 'http://127.0.0.1:8000';
 
 export function ChatLayout() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -23,7 +23,6 @@ export function ChatLayout() {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Initialize session
     async function initSession() {
       const newSessionId = `session-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
       try {
@@ -33,19 +32,18 @@ export function ChatLayout() {
             'accept': 'application/json',
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({}), // Empty body as per cURL example for session creation
+          body: JSON.stringify({}), 
         });
 
         if (response.ok) {
           setSessionId(newSessionId);
           console.log("Chat session created:", newSessionId);
-          // No initial welcome message from AI
         } else {
           const errorData = await response.text();
           console.error("Failed to create session:", response.status, errorData);
           toast({
             title: "Initialization Error",
-            description: "Could not initialize chat session. Please refresh the page.",
+            description: "Could not initialize LEO Doc AI chat session. Please refresh the page.",
             variant: "destructive",
           });
         }
@@ -53,7 +51,7 @@ export function ChatLayout() {
         console.error("Error creating session:", error);
         toast({
           title: "Network Error",
-          description: "Could not connect to initialize chat session. Please check your connection or try again later.",
+          description: "Could not connect to initialize LEO Doc AI chat session. Please check your connection or try again later.",
           variant: "destructive",
         });
       }
@@ -75,7 +73,7 @@ export function ChatLayout() {
     scrollToBottom();
   }, [messages]);
 
-  const handleSendMessage = async (text: string, file?: File) => {
+  const handleSendMessage = async (text: string, files?: File[]) => { // files is now File[]
     if (!sessionId) {
       toast({
         title: "Session Error",
@@ -90,9 +88,9 @@ export function ChatLayout() {
     const userMessage: ChatMessage = {
       id: userMessageId,
       sender: 'user',
-      type: file ? 'file_info' : 'text',
-      text: file ? (text || `Uploaded: ${file.name}`) : text,
-      file: file,
+      type: (files && files.length > 0) || text ? 'text' : 'file_info', // Simplified, ChatMessageItem handles rendering
+      text: text, // User's typed text
+      files: files, // Array of files
       timestamp: new Date(),
     };
     setMessages((prev) => [...prev, userMessage]);
@@ -111,22 +109,22 @@ export function ChatLayout() {
     try {
       await streamChatResponse(
         userMessage.text, 
-        file,
+        files, // Pass files array
         sessionId,
-        (chunkData) => { // onChunk receives { text: string; isPartial: boolean }
+        (chunkData) => { 
           setMessages((prev) =>
             prev.map((msg) => {
               if (msg.id === aiMessageId) {
                 return {
                   ...msg,
-                  text: chunkData.isPartial ? msg.text + chunkData.text : chunkData.text,
+                  text: chunkData.isPartial ? (msg.text ?? '') + chunkData.text : chunkData.text,
                 };
               }
               return msg;
             })
           );
         },
-        () => { // onComplete
+        () => { 
           setMessages((prev) =>
             prev.map((msg) =>
               msg.id === aiMessageId ? { ...msg, isStreaming: false } : msg
@@ -134,7 +132,7 @@ export function ChatLayout() {
           );
           setIsAISending(false);
         },
-        (error) => { // onError
+        (error) => { 
           console.error('AI Error:', error);
           toast({
             title: "AI Error",

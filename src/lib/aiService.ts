@@ -6,9 +6,9 @@ const API_BASE_URL_CHAT = 'http://127.0.0.1:8000';
 interface UploadedFileDetail {
   filename: string;
   uri: string;
-  gemini_filename: string; // Not directly used in chat message parts yet, but good to have
+  gemini_filename: string;
   mime_type: string;
-  size_bytes: number; // Not directly used yet
+  size_bytes: number;
 }
 
 interface GeminiUploadApiResponse {
@@ -19,12 +19,16 @@ interface SseChunk {
   content?: {
     parts: Array<{
       text?: string;
-      // fileData could also be in response, but we primarily care about text for now
     }>;
     role?: string;
   };
   partial?: boolean;
-  // Other fields like usageMetadata, invocationId etc. are ignored for display
+}
+
+interface TransformedUploadedFileInfo {
+  fileUri: string;
+  displayName: string;
+  mimeType: string;
 }
 
 function processSseLine(
@@ -42,31 +46,36 @@ function processSseLine(
             text: jsonChunk.content.parts[0].text,
             isPartial: jsonChunk.partial === true,
           });
+        } else if (jsonChunk.partial === false && !jsonChunk.content?.parts?.[0]?.text) {
+          // Handle cases where a final non-partial chunk might not have text (e.g. just metadata)
+           onChunkCallback({ text: "", isPartial: false }); // Signal completion of text part
         }
       } catch (e) {
         console.warn("Error parsing JSON chunk from SSE line:", e, jsonData);
       }
     }
-  } else if (trimmedLine && !trimmedLine.startsWith(":")) { // Ignore empty lines and comments
+  } else if (trimmedLine && !trimmedLine.startsWith(":")) { 
     console.warn("Received unexpected SSE line (ignoring):", trimmedLine);
   }
 }
 
 export async function streamChatResponse(
-  message: string,
-  file: File | undefined,
+  message: string, // User's typed text
+  files: File[] | undefined, // Array of files
   sessionId: string,
   onChunk: (chunkData: { text: string; isPartial: boolean }) => void,
   onComplete: () => void,
   onError: (error: Error) => void
 ): Promise<void> {
-  let uploadedFileInfo: { fileUri: string; displayName: string; mimeType: string } | null = null;
+  let uploadedFilesInfo: TransformedUploadedFileInfo[] = [];
 
   try {
-    // Step 1: Upload file if present
-    if (file) {
+    // Step 1: Upload files if present
+    if (files && files.length > 0) {
       const formData = new FormData();
-      formData.append('files', file, file.name);
+      files.forEach(file => {
+        formData.append('files', file, file.name);
+      });
 
       const uploadResponse = await fetch(`${API_BASE_URL_UPLOAD}/upload_to_gemini/`, {
         method: 'POST',
@@ -83,46 +92,47 @@ export async function streamChatResponse(
 
       const uploadResult: GeminiUploadApiResponse = await uploadResponse.json();
       if (!uploadResult || !uploadResult.uploaded_files || uploadResult.uploaded_files.length === 0) {
-        throw new Error("File upload API did not return expected file information.");
+        throw new Error("File upload API did not return expected file information for all files.");
       }
-      const firstFileDetail = uploadResult.uploaded_files[0];
-      uploadedFileInfo = {
-        fileUri: firstFileDetail.uri,
-        displayName: firstFileDetail.filename || file.name,
-        mimeType: firstFileDetail.mime_type || file.type,
-      };
+      
+      uploadedFilesInfo = uploadResult.uploaded_files.map(detail => ({
+        fileUri: detail.uri,
+        displayName: detail.filename, // Using filename from API response
+        mimeType: detail.mime_type,
+      }));
     }
 
     // Step 2: Construct message parts for SSE API
     const newMessageParts: any[] = [];
-    if (uploadedFileInfo) {
-      newMessageParts.push({
-        fileData: {
-          displayName: uploadedFileInfo.displayName,
-          fileUri: uploadedFileInfo.fileUri,
-          mimeType: uploadedFileInfo.mimeType,
-        },
+    
+    if (uploadedFilesInfo.length > 0) {
+      uploadedFilesInfo.forEach(info => {
+        newMessageParts.push({
+          fileData: {
+            displayName: info.displayName,
+            fileUri: info.fileUri,
+            mimeType: info.mimeType,
+          },
+        });
       });
     }
 
-    let textToSend = "";
-    if (file) {
-      textToSend = (message && message !== `Uploaded: ${file.name}`) ? message.trim() : "Please analyze this document.";
-    } else {
-      textToSend = message.trim();
+    // Always add a text part, even if empty, if files are present and message is empty
+    // The backend might require a text part.
+    // If message is empty and files are present, use a default prompt or let it be empty based on API needs.
+    // For now, we send the user's text as is. If it's empty, an empty text part might be sent.
+    const textToSend = message.trim();
+    if (textToSend || newMessageParts.length === 0) { // Send text if it exists, or if no files to ensure at least one part
+         newMessageParts.push({ text: textToSend });
     }
-
-    if (textToSend) {
-      newMessageParts.push({ text: textToSend });
-    }
-
+    
+    // If after all this, newMessageParts is still empty (e.g. empty text AND no files), it's an issue.
     if (newMessageParts.length === 0) {
-      // If only a file was uploaded and no default text, this could happen.
-      // The API might still require a text part, even if empty or a placeholder.
-      // For now, let's assume a text part is always good practice.
-      // If the API truly allows no text part when a file is present, this check might be too strict.
-      // However, current logic ensures "Please analyze this document." if message is empty with a file.
-      console.warn("Attempting to send a message with no text or file parts. This might be an error.");
+      // This case should ideally not be reached if the send button is disabled correctly.
+      // However, as a fallback, we could send a default empty text message.
+      // For now, the existing logic with send button disablement should prevent this.
+       console.warn("Attempting to send a message with no text or file parts. This might be an error.");
+       // newMessageParts.push({ text: "" }); // Fallback if API requires a part
     }
 
 
@@ -170,7 +180,7 @@ export async function streamChatResponse(
       const { done, value } = await reader.read();
       if (done) {
         if (buffer.trim()) {
-           const lines = buffer.split('\n');
+           const lines = buffer.split('\\n'); // SSE spec uses \n, \r, or \r\n. Robust parsing handles this.
            lines.forEach(line => processSseLine(line, onChunk));
         }
         break;
@@ -178,7 +188,9 @@ export async function streamChatResponse(
 
       buffer += decoder.decode(value, { stream: true });
       let eolIndex;
-      while ((eolIndex = buffer.indexOf('\n')) >= 0) {
+      // SSE messages are separated by double newlines, or single newlines if they are part of the same event.
+      // We process line by line.
+      while ((eolIndex = buffer.indexOf('\\n')) >= 0) {
         const line = buffer.substring(0, eolIndex);
         buffer = buffer.substring(eolIndex + 1);
         processSseLine(line, onChunk);
@@ -189,7 +201,6 @@ export async function streamChatResponse(
   } catch (err) {
     console.error("Error in streamChatResponse:", err);
     onError(err instanceof Error ? err : new Error('An unknown error occurred in AI service.'));
-    onComplete();
+    onComplete(); // Ensure onComplete is called even on error to stop loading states
   }
 }
-

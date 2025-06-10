@@ -1,9 +1,10 @@
+
 export interface ChatMessage {
   id: string;
   sender: 'user' | 'ai';
-  type: 'text' | 'file_info';
-  text: string;
-  file?: File;
+  type: 'text' | 'file_info'; // type can be simplified if ChatMessageItem handles rendering based on content
+  text: string; // User's typed text or AI's response text
+  files?: File[]; // Array of files for user messages
   timestamp: Date;
   isStreaming?: boolean;
 }
