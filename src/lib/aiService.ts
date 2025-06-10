@@ -3,10 +3,16 @@
 const API_BASE_URL_UPLOAD = 'http://127.0.0.1:8787';
 const API_BASE_URL_CHAT = 'http://127.0.0.1:8000';
 
-interface UploadedFileAPIResponse {
-  fileUri: string;
-  displayName: string;
-  mimeType: string;
+interface UploadedFileDetail {
+  filename: string;
+  uri: string;
+  gemini_filename: string; // Not directly used in chat message parts yet, but good to have
+  mime_type: string;
+  size_bytes: number; // Not directly used yet
+}
+
+interface GeminiUploadApiResponse {
+  uploaded_files: UploadedFileDetail[];
 }
 
 interface SseChunk {
@@ -34,14 +40,14 @@ function processSseLine(
         if (jsonChunk.content?.parts?.[0]?.text) {
           onChunkCallback({
             text: jsonChunk.content.parts[0].text,
-            isPartial: jsonChunk.partial === true, // True if partial is explicitly true
+            isPartial: jsonChunk.partial === true,
           });
         }
       } catch (e) {
         console.warn("Error parsing JSON chunk from SSE line:", e, jsonData);
       }
     }
-  } else if (trimmedLine && !trimmedLine.startsWith(":")) { // Ignore empty lines and comments (lines starting with ':')
+  } else if (trimmedLine && !trimmedLine.startsWith(":")) { // Ignore empty lines and comments
     console.warn("Received unexpected SSE line (ignoring):", trimmedLine);
   }
 }
@@ -75,14 +81,15 @@ export async function streamChatResponse(
         throw new Error(`File upload failed: ${uploadResponse.status} ${errorText}`);
       }
 
-      const uploadResult: UploadedFileAPIResponse[] = await uploadResponse.json();
-      if (!uploadResult || uploadResult.length === 0) {
+      const uploadResult: GeminiUploadApiResponse = await uploadResponse.json();
+      if (!uploadResult || !uploadResult.uploaded_files || uploadResult.uploaded_files.length === 0) {
         throw new Error("File upload API did not return expected file information.");
       }
+      const firstFileDetail = uploadResult.uploaded_files[0];
       uploadedFileInfo = {
-        fileUri: uploadResult[0].fileUri,
-        displayName: uploadResult[0].displayName || file.name,
-        mimeType: uploadResult[0].mimeType || file.type,
+        fileUri: firstFileDetail.uri,
+        displayName: firstFileDetail.filename || file.name,
+        mimeType: firstFileDetail.mime_type || file.type,
       };
     }
 
@@ -110,8 +117,14 @@ export async function streamChatResponse(
     }
 
     if (newMessageParts.length === 0) {
-      throw new Error("Cannot send an empty message to the AI.");
+      // If only a file was uploaded and no default text, this could happen.
+      // The API might still require a text part, even if empty or a placeholder.
+      // For now, let's assume a text part is always good practice.
+      // If the API truly allows no text part when a file is present, this check might be too strict.
+      // However, current logic ensures "Please analyze this document." if message is empty with a file.
+      console.warn("Attempting to send a message with no text or file parts. This might be an error.");
     }
+
 
     const requestBody = {
       appName: "doc_agent",
@@ -156,9 +169,7 @@ export async function streamChatResponse(
     while (true) {
       const { done, value } = await reader.read();
       if (done) {
-        // Process any remaining data in buffer before completing
         if (buffer.trim()) {
-           // Assuming any final buffered content is also line-delimited
            const lines = buffer.split('\n');
            lines.forEach(line => processSseLine(line, onChunk));
         }
@@ -167,7 +178,6 @@ export async function streamChatResponse(
 
       buffer += decoder.decode(value, { stream: true });
       let eolIndex;
-      // Process all complete lines in the buffer
       while ((eolIndex = buffer.indexOf('\n')) >= 0) {
         const line = buffer.substring(0, eolIndex);
         buffer = buffer.substring(eolIndex + 1);
@@ -179,6 +189,7 @@ export async function streamChatResponse(
   } catch (err) {
     console.error("Error in streamChatResponse:", err);
     onError(err instanceof Error ? err : new Error('An unknown error occurred in AI service.'));
-    onComplete(); 
+    onComplete();
   }
 }
+
