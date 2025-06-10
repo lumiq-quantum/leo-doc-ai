@@ -1,7 +1,8 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import type React from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Send } from 'lucide-react';
@@ -15,12 +16,30 @@ interface ChatInputBarProps {
 export function ChatInputBar({ onSendMessage, isSending }: ChatInputBarProps) {
   const [inputText, setInputText] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | undefined>(undefined);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto'; // Reset height to recalculate
+      const scrollHeight = textareaRef.current.scrollHeight;
+      // Ensure height does not exceed max-height defined by CSS (max-h-[120px])
+      // Ensure height does not go below min-height defined by CSS (min-h-[48px])
+      textareaRef.current.style.height = `${scrollHeight}px`;
+    }
+  }, [inputText]);
 
   const handleSend = () => {
     if (inputText.trim() === '' && !selectedFile) return;
     onSendMessage(inputText.trim(), selectedFile);
     setInputText('');
     setSelectedFile(undefined);
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto'; // Reset height after send
+    }
+  };
+
+  const handleInputChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInputText(event.target.value);
   };
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -32,8 +51,6 @@ export function ChatInputBar({ onSendMessage, isSending }: ChatInputBarProps) {
 
   const handleFileSelect = (file: File) => {
     setSelectedFile(file);
-    // Optionally, you could auto-send or require text with file.
-    // For now, user must click send or press enter.
   };
 
   return (
@@ -46,22 +63,22 @@ export function ChatInputBar({ onSendMessage, isSending }: ChatInputBarProps) {
           </Button>
         </div>
       )}
-      <div className="flex items-center gap-2">
+      <div className="flex items-end gap-2"> {/* Changed to items-end for better alignment with growing textarea */}
         <FileUploadButton onFileSelect={handleFileSelect} disabled={isSending || !!selectedFile} />
         <Textarea
+          ref={textareaRef}
           value={inputText}
-          onChange={(e) => setInputText(e.target.value)}
+          onChange={handleInputChange}
           onKeyDown={handleKeyDown}
           placeholder="Type your message or upload a document..."
-          className="flex-1 resize-none rounded-full border-2 border-border focus-visible:ring-primary/50 px-4 py-2.5 min-h-[48px] max-h-[120px]"
-          rows={1}
+          className="flex-1 resize-none rounded-2xl border-2 border-border focus-visible:ring-primary/50 px-4 py-2.5 min-h-[48px] max-h-[120px] overflow-y-auto"
           disabled={isSending}
         />
         <Button
           type="button"
           onClick={handleSend}
           disabled={isSending || (inputText.trim() === '' && !selectedFile)}
-          className="bg-accent hover:bg-accent/90 text-accent-foreground rounded-full p-3"
+          className="bg-accent hover:bg-accent/90 text-accent-foreground rounded-full p-3 self-end mb-[1px]" // Align button to bottom
           aria-label="Send message"
         >
           <Send className="h-5 w-5" />
