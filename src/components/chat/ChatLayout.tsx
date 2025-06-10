@@ -45,7 +45,7 @@ export function ChatLayout() {
               id: 'ai-welcome',
               sender: 'ai',
               type: 'text',
-              text: "Hello! I am LEO Doc AI. How can I assist you today? You can ask questions or upload a document for analysis.",
+              text: "Hi I am LEO Doc AI, Please upload relevant documents for the analysis for opening a current account account in State Bank of India",
               timestamp: new Date(),
             }
           ]);
