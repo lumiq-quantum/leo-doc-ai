@@ -41,15 +41,23 @@ function processSseLine(
     if (jsonData) {
       try {
         const jsonChunk: SseChunk = JSON.parse(jsonData);
-        if (jsonChunk.content?.parts?.[0]?.text) {
+        const textContent = jsonChunk.content?.parts?.[0]?.text;
+        const isPartial = jsonChunk.partial === true; // Explicitly check if partial is true
+
+        if (textContent !== undefined) {
+          // If textContent exists (even if it's an empty string), process it
           onChunkCallback({
-            text: jsonChunk.content.parts[0].text,
-            isPartial: jsonChunk.partial === true,
+            text: textContent,
+            isPartial: isPartial,
           });
-        } else if (jsonChunk.partial === false && !jsonChunk.content?.parts?.[0]?.text) {
-          // Handle cases where a final non-partial chunk might not have text (e.g. just metadata)
-           onChunkCallback({ text: "", isPartial: false }); // Signal completion of text part
+        } else if (!isPartial) {
+          // This is a final (not partial) chunk but has no text content.
+          // This might signal the end of text streaming or just be metadata.
+          // Call onChunkCallback to allow UI to update streaming status if needed.
+          onChunkCallback({ text: "", isPartial: false });
         }
+        // If it's partial and textContent is undefined, we can ignore it,
+        // as there's no text to append, and a subsequent chunk should provide text or a final status.
       } catch (e) {
         console.warn("Error parsing JSON chunk from SSE line:", e, jsonData);
       }
@@ -97,7 +105,7 @@ export async function streamChatResponse(
       
       uploadedFilesInfo = uploadResult.uploaded_files.map(detail => ({
         fileUri: detail.uri,
-        displayName: detail.filename, // Using filename from API response
+        displayName: detail.filename, 
         mimeType: detail.mime_type,
       }));
     }
@@ -117,22 +125,13 @@ export async function streamChatResponse(
       });
     }
 
-    // Always add a text part, even if empty, if files are present and message is empty
-    // The backend might require a text part.
-    // If message is empty and files are present, use a default prompt or let it be empty based on API needs.
-    // For now, we send the user's text as is. If it's empty, an empty text part might be sent.
     const textToSend = message.trim();
-    if (textToSend || newMessageParts.length === 0) { // Send text if it exists, or if no files to ensure at least one part
+    if (textToSend || newMessageParts.length === 0) { 
          newMessageParts.push({ text: textToSend });
     }
     
-    // If after all this, newMessageParts is still empty (e.g. empty text AND no files), it's an issue.
     if (newMessageParts.length === 0) {
-      // This case should ideally not be reached if the send button is disabled correctly.
-      // However, as a fallback, we could send a default empty text message.
-      // For now, the existing logic with send button disablement should prevent this.
        console.warn("Attempting to send a message with no text or file parts. This might be an error.");
-       // newMessageParts.push({ text: "" }); // Fallback if API requires a part
     }
 
 
@@ -180,7 +179,7 @@ export async function streamChatResponse(
       const { done, value } = await reader.read();
       if (done) {
         if (buffer.trim()) {
-           const lines = buffer.split('\\n'); // SSE spec uses \n, \r, or \r\n. Robust parsing handles this.
+           const lines = buffer.split('\\n'); 
            lines.forEach(line => processSseLine(line, onChunk));
         }
         break;
@@ -188,8 +187,6 @@ export async function streamChatResponse(
 
       buffer += decoder.decode(value, { stream: true });
       let eolIndex;
-      // SSE messages are separated by double newlines, or single newlines if they are part of the same event.
-      // We process line by line.
       while ((eolIndex = buffer.indexOf('\\n')) >= 0) {
         const line = buffer.substring(0, eolIndex);
         buffer = buffer.substring(eolIndex + 1);
@@ -201,6 +198,6 @@ export async function streamChatResponse(
   } catch (err) {
     console.error("Error in streamChatResponse:", err);
     onError(err instanceof Error ? err : new Error('An unknown error occurred in AI service.'));
-    onComplete(); // Ensure onComplete is called even on error to stop loading states
+    onComplete(); 
   }
 }
