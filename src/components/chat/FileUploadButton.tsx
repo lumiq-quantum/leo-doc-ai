@@ -9,9 +9,10 @@ import { useToast } from '@/hooks/use-toast';
 interface FileUploadButtonProps {
   onFileSelect: (file: File) => void;
   disabled?: boolean;
+  className?: string;
 }
 
-export function FileUploadButton({ onFileSelect, disabled }: FileUploadButtonProps) {
+export function FileUploadButton({ onFileSelect, disabled, className }: FileUploadButtonProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -55,7 +56,7 @@ export function FileUploadButton({ onFileSelect, disabled }: FileUploadButtonPro
         onClick={handleClick}
         disabled={disabled}
         aria-label="Attach document"
-        className="text-primary hover:text-primary/80"
+        className={cn("h-12 w-12 text-primary hover:text-primary/80", className)}
       >
         <Paperclip className="h-5 w-5" />
       </Button>

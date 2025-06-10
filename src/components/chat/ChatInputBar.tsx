@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Send } from 'lucide-react';
 import { FileUploadButton } from './FileUploadButton';
+import { cn } from '@/lib/utils';
 
 interface ChatInputBarProps {
   onSendMessage: (text: string, file?: File) => void;
@@ -22,8 +23,6 @@ export function ChatInputBar({ onSendMessage, isSending }: ChatInputBarProps) {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto'; // Reset height to recalculate
       const scrollHeight = textareaRef.current.scrollHeight;
-      // Ensure height does not exceed max-height defined by CSS (max-h-[120px])
-      // Ensure height does not go below min-height defined by CSS (min-h-[48px])
       textareaRef.current.style.height = `${scrollHeight}px`;
     }
   }, [inputText]);
@@ -63,7 +62,7 @@ export function ChatInputBar({ onSendMessage, isSending }: ChatInputBarProps) {
           </Button>
         </div>
       )}
-      <div className="flex items-end gap-2"> {/* Changed to items-end for better alignment with growing textarea */}
+      <div className="flex items-end gap-2">
         <FileUploadButton onFileSelect={handleFileSelect} disabled={isSending || !!selectedFile} />
         <Textarea
           ref={textareaRef}
@@ -78,7 +77,9 @@ export function ChatInputBar({ onSendMessage, isSending }: ChatInputBarProps) {
           type="button"
           onClick={handleSend}
           disabled={isSending || (inputText.trim() === '' && !selectedFile)}
-          className="bg-accent hover:bg-accent/90 text-accent-foreground rounded-full p-3 self-end mb-[1px]" // Align button to bottom
+          className={cn(
+            "h-12 w-12 bg-accent hover:bg-accent/90 text-accent-foreground rounded-full self-end flex items-center justify-center"
+          )}
           aria-label="Send message"
         >
           <Send className="h-5 w-5" />
