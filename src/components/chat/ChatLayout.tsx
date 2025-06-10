@@ -39,16 +39,7 @@ export function ChatLayout() {
         if (response.ok) {
           setSessionId(newSessionId);
           console.log("Chat session created:", newSessionId);
-          // Send initial welcome message after session is established
-          setMessages([
-            {
-              id: 'ai-welcome',
-              sender: 'ai',
-              type: 'text',
-              text: "Hi I am LEO Doc AI, Please upload relevant documents for the analysis for opening a current account account in State Bank of India",
-              timestamp: new Date(),
-            }
-          ]);
+          // No initial welcome message from AI
         } else {
           const errorData = await response.text();
           console.error("Failed to create session:", response.status, errorData);
