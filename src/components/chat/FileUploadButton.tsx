@@ -50,7 +50,7 @@ export function FileUploadButton({ onFileSelect, disabled }: FileUploadButtonPro
       />
       <Button
         type="button"
-        variant="ghost"
+        variant="outline"
         size="icon"
         onClick={handleClick}
         disabled={disabled}

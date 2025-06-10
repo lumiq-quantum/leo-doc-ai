@@ -37,7 +37,7 @@ export function ChatInputBar({ onSendMessage, isSending }: ChatInputBarProps) {
   };
 
   return (
-    <div className="sticky bottom-0 left-0 right-0 border-t bg-background p-4 shadow- ऊपर">
+    <div className="sticky bottom-0 left-0 right-0 border-t bg-background p-4 shadow-lg">
       {selectedFile && (
         <div className="mb-2 text-sm text-muted-foreground">
           Selected file: {selectedFile.name} ({(selectedFile.size / 1024).toFixed(2)} KB)
