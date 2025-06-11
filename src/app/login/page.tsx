@@ -44,8 +44,8 @@ export default function LoginPage() {
         layout="fill"
         objectFit="cover"
         quality={75}
-        priority // Prioritize loading for LCP
-        className="-z-20 animate-pulse-slowly" // Furthest behind, subtle animation
+        priority 
+        className="-z-20 animate-pulse-slowly" 
         data-ai-hint="light abstract" 
       />
       {/* Overlay for readability & aesthetic */}
@@ -72,13 +72,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
-// Add this to globals.css or tailwind.config.js if you want the animation globally
-// For now, defining it locally in tailwind.config is better if not already there.
-// tailwind.config.ts keyframes:
-// 'pulse-slowly': {
-//   '0%, 100%': { opacity: '0.8' },
-//   '50%': { opacity: '1' },
-// }
-// animation:
-// 'pulse-slowly': 'pulse-slowly 5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
