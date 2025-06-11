@@ -46,7 +46,7 @@ export default function LoginPage() {
         quality={75}
         priority // Prioritize loading for LCP
         className="-z-20 animate-pulse-slowly" // Furthest behind, subtle animation
-        data-ai-hint="futuristic technology network" // Updated hint
+        data-ai-hint="astronaut desolate landscape" // Updated hint
       />
       {/* Overlay for readability & aesthetic */}
       <div className="absolute inset-0 -z-10 bg-gradient-to-br from-black/60 via-slate-950/70 to-black/60"></div>
