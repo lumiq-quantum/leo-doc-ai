@@ -8,9 +8,9 @@ import * as z from 'zod';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label'; // Keep this import
+// import { Label } from '@/components/ui/label'; // Keep this import - actually, we can remove it if not used
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
 import { useToast } from '@/hooks/use-toast';
 import { LogIn } from 'lucide-react';
 
@@ -63,7 +63,7 @@ export function LoginForm() {
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-neutral-300/80">Email Address</FormLabel>
+                  {/* <FormLabel className="text-neutral-300/80">Email Address</FormLabel> */}
                   <FormControl>
                     <Input
                       id="email"
@@ -83,7 +83,7 @@ export function LoginForm() {
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-neutral-300/80">Password</FormLabel>
+                  {/* <FormLabel className="text-neutral-300/80">Password</FormLabel> */}
                   <FormControl>
                     <Input
                       id="password"
