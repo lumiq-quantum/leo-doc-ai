@@ -11,7 +11,7 @@ export default {
     extend: {
       fontFamily: {
         body: ['Roboto', 'sans-serif'],
-        headline: ['Roboto', 'sans-serif'],
+        headline: ['Roboto', 'sans-serif'], // Consider a more "techy" font if available or desired
         code: ['monospace'],
       },
       colors: {
@@ -70,6 +70,8 @@ export default {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
+        xl: 'calc(var(--radius) + 4px)', // Added for more rounded elements
+        '2xl': 'calc(var(--radius) + 8px)', // Added for more rounded elements
       },
       keyframes: {
         'accordion-down': {
@@ -88,10 +90,15 @@ export default {
             height: '0',
           },
         },
+        'pulse-slowly': { // Added for subtle background image animation
+          '0%, 100%': { opacity: '0.9' },
+          '50%': { opacity: '1' },
+        }
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
+        'pulse-slowly': 'pulse-slowly 6s cubic-bezier(0.4, 0, 0.6, 1) infinite', // Added
       },
     },
   },
