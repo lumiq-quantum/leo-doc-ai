@@ -39,7 +39,7 @@ export default function LoginPage() {
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center p-4 antialiased overflow-hidden">
       <Image
-        src="http://10.221.41.15/sign-in-form--white@2x.png"
+        src="https://raw.githubusercontent.com/lumiq-quantum/cdn/refs/heads/main/sign-in-form--white%402x.png"
         alt="Abstract background"
         layout="fill"
         objectFit="cover"
