@@ -46,7 +46,7 @@ export default function LoginPage() {
         quality={75}
         priority // Prioritize loading for LCP
         className="-z-20 animate-pulse-slowly" // Furthest behind, subtle animation
-        data-ai-hint="astronaut desolate landscape" // Updated hint
+        data-ai-hint="astronaut desolate landscape" 
       />
       {/* Overlay for readability & aesthetic */}
       <div className="absolute inset-0 -z-10 bg-gradient-to-br from-black/60 via-slate-950/70 to-black/60"></div>
@@ -54,9 +54,8 @@ export default function LoginPage() {
       <div className="z-0 flex flex-col items-center text-center max-w-md w-full px-4">
         <div className="mb-10 flex flex-col items-center">
           <Image 
-            src="https://placehold.co/100x100.png?text=LD" 
+            src="https://litecone.ai/wp-content/uploads/2025/01/08.jpg" 
             alt="LEO Doc AI Logo" 
-            data-ai-hint="logo abstract tech" 
             width={90} 
             height={90} 
             className="rounded-2xl mb-6 shadow-2xl border-2 border-primary/20" 
