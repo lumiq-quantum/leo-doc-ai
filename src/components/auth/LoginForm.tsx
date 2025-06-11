@@ -52,7 +52,7 @@ export function LoginForm() {
       <CardHeader className="pt-8">
         <CardTitle className="text-3xl font-headline text-neutral-100 text-center">Welcome Back</CardTitle>
         <CardDescription className="text-neutral-300/90 text-center pt-1">
-          Enter your credentials to access LEO Doc AI.
+          Enter your credentials to access.
         </CardDescription>
       </CardHeader>
       <Form {...form}>
