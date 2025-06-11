@@ -22,6 +22,12 @@ const nextConfig: NextConfig = {
         hostname: 'litecone.ai',
         port: '',
         pathname: '/**',
+      },
+      {
+        protocol: 'http',
+        hostname: '10.221.41.15',
+        port: '',
+        pathname: '/**',
       }
     ],
   },
