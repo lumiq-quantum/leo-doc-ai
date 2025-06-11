@@ -60,15 +60,18 @@ export default function LoginPage() {
             height={90} 
             className="rounded-2xl mb-6 shadow-2xl border-2 border-primary/20" 
           />
+          {/* 
           <h1 className="text-5xl md:text-6xl font-headline font-bold text-transparent bg-clip-text bg-gradient-to-r from-neutral-100 via-neutral-200 to-neutral-50 drop-shadow-[0_2px_3px_rgba(0,0,0,0.6)]">
             LEO Doc AI
           </h1>
           <p className="mt-3 text-lg md:text-xl text-neutral-300/80 drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]">
             Intelligent Document Interaction
-          </p>
+          </p> 
+          */}
         </div>
         <LoginForm />
       </div>
     </div>
   );
 }
+
