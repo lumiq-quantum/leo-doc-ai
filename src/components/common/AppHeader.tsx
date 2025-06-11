@@ -14,12 +14,12 @@ export function AppHeader() {
       <div className="flex items-center">
          <Image 
            src="https://litecone.ai/wp-content/uploads/2025/01/08.jpg" 
-           alt="LEO Doc AI Logo" 
+           alt="App Logo" 
            width={32} 
            height={32} 
            className="mr-2 rounded-md" 
          />
-        <h1 className="text-xl font-headline font-semibold text-primary">LEO Doc AI</h1>
+        <h1 className="text-xl font-headline font-semibold text-primary">Verify and Analyse Documents</h1>
       </div>
       <div className="flex items-center gap-4">
         {user && <span className="text-sm text-muted-foreground hidden sm:inline">Welcome, {user.email}</span>}
